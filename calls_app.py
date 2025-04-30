@@ -10,6 +10,13 @@ import contextily as cx
 import geopandas as gpd
 
 # Define pages
+def intro():
+    st.title("Baltimore 911 Calls - Neighborhood Trends and Predicting Priority")
+    st.markdown("by Cassie Chou and Julia Martin | Data Science for Public Health 4th Term Capstone")
+    st.write("This app provides a descriptive analysis of 911 calls in Baltimore, Maryland, and predicts the priority of calls based on various features.")
+    st.write("Use the sidebar to navigate between the Descriptive Analysis and Prediction pages.")
+    st.write("The data used in this app is sourced from Open Baltimore API 2024 911 Calls for Service.")
+
 def page_1():
     st.title("Descriptive Analysis")
     st.write("This is the Calls Plots page.")
@@ -119,9 +126,11 @@ def page_2():
     st.write("This is the Prediction page.")
 
 # Sidebar navigation
-page = st.sidebar.radio("Select a Page", ["Descriptive Analysis", "Prediction"])
+page = st.sidebar.radio("Select a Page", ["Welcome", "Descriptive Analysis", "Prediction"])
 
 # Render the selected page
+if page == "Welcome":
+    intro()
 if page == "Descriptive Analysis":
     page_1()
 elif page == "Prediction":
