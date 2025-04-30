@@ -11,16 +11,15 @@ import geopandas as gpd
 
 # Define pages
 def intro():
-    st.title("Baltimore 911 Calls - Neighborhood Trends and Predicting Priority")
+    st.title("Analysis of Baltimore 911 Calls")
     st.markdown("by Cassie Chou and Julia Martin | Data Science for Public Health 4th Term Capstone")
-    st.write("This app provides a descriptive analysis of 911 calls in Baltimore, Maryland, and predicts the priority of calls based on various features.")
+    st.write("This app provides a descriptive analysis of 911 calls in Baltimore, Maryland, and predicts the priority of calls based on various features inlcuding date, time, and neighborhood.")
+    st.write("The data used in this app is sourced from Open Baltimore API 2024 911 Calls for Service, which contains 1.6 million call records and information about each call including date, time, neighborhood, priority, and description of emergency.")
     st.write("Use the sidebar to navigate between the Descriptive Analysis and Prediction pages.")
-    st.write("The data used in this app is sourced from Open Baltimore API 2024 911 Calls for Service.")
+
 
 def page_1():
     st.title("Descriptive Analysis")
-    st.write("This is the Calls Plots page.")
-    st.markdown("by Cassie Chou and Julia Martin | Data Science for Public Health 4th Term Capstone")
 
     # Read in data from Open Baltimore API 2024 911 Calls for Service
     calls = pd.read_csv("911_Calls_for_Service_2024.csv")
@@ -72,14 +71,17 @@ def page_1():
         annotations=[
             dict(
             text="1 = Non-Emergency, 2 = Low, 3 = Medium, 4 = High, 5 = Emergency",  # Add your subtitle here
-            x=0.2,  # Center the subtitle
+            x=0.15,  # Center the subtitle
             y=-.1,  # Position below the title
             xref="paper",
             yref="paper",
             showarrow=False,
-            font=dict(size=12, color="gray") # Customize font size and color
+            font=dict(size=14, color="black") # Customize font size and color
         )]
     )
+
+    st.write("Data is organized into 55 **Community Statistical Areas (CSA)**, which are clusters of neighborhoods in Baltimore organized around Census tract boundaries.")
+    st.write("Calls are coded as **Non-Emergency (1)**, **Low (2)**, **Medium (3)**, **High (4)**, or **Emergency (5)**. The average priority score is calculated by dividing the sum of call priorities by the total number of calls in each CSA.")
 
     #fig1.update_geos(fitbounds="locations", visible=False)
     st.plotly_chart(fig1)
