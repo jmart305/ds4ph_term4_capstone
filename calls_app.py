@@ -144,11 +144,10 @@ def page_2():
     le_csa = preprocessors['le_csa']  
 
     # Read in Data
-    calls = pd.read_csv("911_Calls_for_Service_2024.csv")
-    calls.dropna(inplace = True)
+    csa = pd.read_csv("csa.csv")
 
     # Get Inputs
-    community_area = st.selectbox("Select Community Statistical Area", options=calls['Community_Statistical_Areas'].unique(), index = 0)
+    community_area = st.selectbox("Select Community Statistical Area", options=csa, index = 0)
     date = st.date_input("Select Date", value=pd.to_datetime("2024-01-01"))
     time = st.time_input("Select Time", value=pd.to_datetime("12:00").time())
     days_of_week = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
