@@ -8,6 +8,12 @@ import altair as alt
 import folium
 import contextily as cx
 import geopandas as gpd
+import torch
+import torch.nn as nn
+from sklearn.preprocessing import LabelEncoder
+from sklearn.preprocessing import StandardScaler
+import pickle
+from model_def import EnhancedPredictor
 
 # Define pages
 def intro():
@@ -125,7 +131,54 @@ def page_1():
 
 def page_2():
     st.title("Prediction")
-    st.write("This is the Prediction page.")
+    st.write("Please input Community Area, Date, and Time to get a predicted priority call level.")
+
+    # Read in Model and Preprocessors
+    with open('priority_model.pkl', 'rb') as f:
+        model = pickle.load(f)
+
+    with open('preprocessors.pkl', 'rb') as f:
+        preprocessors = pickle.load(f)
+    scaler = preprocessors['scaler']           # StandardScaler/MinMaxScaler
+    le_priority = preprocessors['le_priority'] # LabelEncoder for priority
+    le_csa = preprocessors['le_csa']  
+
+    # Read in Data
+    calls = pd.read_csv("911_Calls_for_Service_2024.csv")
+    calls.dropna(inplace = True)
+
+    # Get Inputs
+    community_area = st.selectbox("Select Community Statistical Area", options=calls['Community_Statistical_Areas'].unique(), index = 0)
+    date = st.date_input("Select Date", value=pd.to_datetime("2024-01-01"))
+    time = st.time_input("Select Time", value=pd.to_datetime("12:00").time())
+    days_of_week = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+    day_of_week = st.selectbox("Select Day of Week", options=days_of_week, index = 0)
+
+    le_dayOTW = LabelEncoder()
+    le_dayOTW.classes_ = np.array(days_of_week)
+    day_of_week = le_dayOTW.transform([day_of_week])
+    community_area = le_csa.transform([community_area])
+
+    x_input = pd.DataFrame({
+        'month': pd.to_datetime(date).month,
+        'day': pd.to_datetime(date).day,
+        'time': int(time.strftime("%H%M%S")),
+        'day_of_week': day_of_week,
+        'Community_Statistical_Areas': community_area
+    })
+
+    features = ['month', 'day', 'time']
+    x_input[features] = scaler.transform(x_input[features])
+    x_input_torch = torch.from_numpy(x_input.values.astype(np.float32))
+
+    model.eval()
+    with torch.no_grad():
+        logits = model(x_input_torch)
+        probs = torch.softmax(logits, dim = 1)
+        preds = torch.argmax(probs, dim = 1)
+
+    preds = le_priority.inverse_transform(preds.numpy())
+    st.write("Predicted Priority Level: ", preds.item())
 
 # Sidebar navigation
 page = st.sidebar.radio("Select a Page", ["Welcome", "Descriptive Analysis", "Prediction"])
