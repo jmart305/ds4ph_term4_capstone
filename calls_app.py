@@ -11,6 +11,7 @@ import geopandas as gpd
 import torch
 import torch.nn as nn
 from sklearn.preprocessing import LabelEncoder
+from sklearn.preprocessing import OneHotEncoder
 from sklearn.preprocessing import StandardScaler
 import pickle
 from model_def import EnhancedPredictor
@@ -141,13 +142,19 @@ def page_2():
         preprocessors = pickle.load(f)
     scaler = preprocessors['scaler']           # StandardScaler/MinMaxScaler
     le_priority = preprocessors['le_priority'] # LabelEncoder for priority
-    le_csa = preprocessors['le_csa']  
+    le_csa = preprocessors['le_csa']
+    le_neighborhood = preprocessors['le_neighborhood']
+    le_description = preprocessors['le_description']
 
     # Read in Data
     csa = pd.read_csv("csa.csv")
+    neighborhood = pd.read_csv("neighborhood.csv")
+    description = pd.read_csv("description.csv")
 
     # Get Inputs
     community_area = st.selectbox("Select Community Statistical Area", options=csa, index = 0)
+    neighborhood_val = st.selectbox("Select Neighborhood", options=neighborhood, index = 0)
+    descrip_val = st.selectbox("Select Description", options=description, index = 0)
     date = st.date_input("Select Date", value=pd.to_datetime("2024-01-01"))
     time = st.time_input("Select Time", value=pd.to_datetime("12:00").time())
     days_of_week = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
@@ -156,18 +163,21 @@ def page_2():
     le_dayOTW = LabelEncoder()
     le_dayOTW.classes_ = np.array(days_of_week)
     day_of_week = le_dayOTW.transform([day_of_week])
-    community_area = le_csa.transform([community_area])
+    community_area = le_csa.transform([[community_area]])
+    neighborhood_val = le_neighborhood.transform([[neighborhood_val]])
+    descrip_val = le_description.transform([[descrip_val]])
 
     x_input = pd.DataFrame({
         'month': pd.to_datetime(date).month,
         'day': pd.to_datetime(date).day,
         'time': int(time.strftime("%H%M%S")),
-        'day_of_week': day_of_week,
-        'Community_Statistical_Areas': community_area
+        'day_of_week': day_of_week
     })
 
     features = ['month', 'day', 'time']
     x_input[features] = scaler.transform(x_input[features])
+    x_input = x_input.join(pd.DataFrame(neighborhood_val, columns = le_neighborhood.categories_))
+    x_input = x_input.join(pd.DataFrame(descrip_val, columns=le_description.categories_))
     x_input_torch = torch.from_numpy(x_input.values.astype(np.float32))
 
     model.eval()
