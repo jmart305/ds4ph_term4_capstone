@@ -20,19 +20,33 @@ from model_def import EnhancedPredictor
 def intro():
     st.title("Analysis of Baltimore 911 Calls")
     st.markdown("by Cassie Chou and Julia Martin | Data Science for Public Health 4th Term Capstone")
+    url = "https://bmore-open-data-baltimore.hub.arcgis.com/datasets/911-calls-for-service-2024-1/explore"
     st.write("This app provides a descriptive analysis of 911 calls in Baltimore, Maryland, and predicts the priority of calls based on various features inlcuding date, time, and neighborhood.")
-    st.write("The data used in this app is sourced from Open Baltimore API 2024 911 Calls for Service, which contains 1.6 million call records and information about each call including date, time, neighborhood, priority, and description of emergency.")
+    st.write("The data used in this app is sourced from [Open Baltimore API 2024 911 Calls for Service](%s)" % url)
+    st.write("The call records contain 1.6 million call records and information about each call including date, time, neighborhood, priority, and description of emergency.")
     st.write("Use the sidebar to navigate between the Descriptive Analysis and Prediction pages.")
+    st.write("**Contents**")
+    st.write("1. Descriptive Analysis")
+    st.write("  - Spatial and temporal trends in 911 calls and priority level")
+    st.write("2. Prediction Page 1")
 
 
 def page_1():
     st.title("Descriptive Analysis")
 
-    # Read in data from Open Baltimore API 2024 911 Calls for Service
-    calls = pd.read_csv("911_Calls_for_Service_2024.csv")
+    @st.cache_data
+    def cache_load(url):
+        data = pd.read_csv(url)
+        return data
 
-    # Read in geo data for community statistical areas
-    csa_data = gpd.read_file("csa_shapes.shp")
+    @st.cache_data
+    def cache_load_geo(url):
+        data = gpd.read_file(url)
+        return data
+
+    calls = cache_load("911_Calls_for_Service_2024.csv")
+
+    csa_data = cache_load_geo("csa_shapes.shp")
 
     # subset calls data where priority is out of service
     calls_out_of_service = calls[calls['priority'] == 'Out of Service']
@@ -55,42 +69,46 @@ def page_1():
     # merge calls_agg with csa_data
     csa_data = csa_data.merge(calls_agg, left_on='CSA2010', right_on='Community_Statistical_Areas', how='left')
 
-    fig1 = px.choropleth_map(
-        csa_data,
-        geojson=csa_data.geometry,
-        locations=csa_data.index,
-        color='priority_score',
-        color_continuous_scale='OrRd',
-        map_style="carto-positron",
-        zoom=9.8,
-        center={"lat": 39.2905, "lon": -76.6104},
-        opacity=0.5,
-        labels={"CSA2010": 'CSA', 'priority_score': 'Average Priority'},
-        hover_name="CSA2010",  # Main label for hover
-        hover_data={
-            "priority_score": True
-        },
-        ).update_traces(hovertemplate=None)  # Disable default hover template
+    @st.cache_data
+    def create_plot_1():
+        fig1 = px.choropleth_map(
+            csa_data,
+            geojson=csa_data.geometry,
+            locations=csa_data.index,
+            color='priority_score',
+            color_continuous_scale='OrRd',
+            map_style="carto-positron",
+            zoom=9.8,
+            center={"lat": 39.2905, "lon": -76.6104},
+            opacity=0.5,
+            labels={"CSA2010": 'CSA', 'priority_score': 'Average Priority'},
+            hover_name="CSA2010",  # Main label for hover
+            hover_data={
+                "priority_score": True
+            },
+            ).update_traces(hovertemplate=None)  # Disable default hover template
 
-    fig1.update_layout(
-        title = " Priority of 911 Calls by Community Statistical Area",
-        title_x = 0.15,
-        annotations=[
-            dict(
-            text="1 = Non-Emergency, 2 = Low, 3 = Medium, 4 = High, 5 = Emergency",  # Add your subtitle here
-            x=0.15,  # Center the subtitle
-            y=-.1,  # Position below the title
-            xref="paper",
-            yref="paper",
-            showarrow=False,
-            font=dict(size=14, color="black") # Customize font size and color
-        )]
-    )
+        fig1.update_layout(
+            title = " Priority of 911 Calls by Community Statistical Area",
+            title_x = 0.15,
+            annotations=[
+                dict(
+                text="1 = Non-Emergency, 2 = Low, 3 = Medium, 4 = High, 5 = Emergency",  # Add your subtitle here
+                x=0.15,  # Center the subtitle
+                y=-.1,  # Position below the title
+                xref="paper",
+                yref="paper",
+                showarrow=False,
+                font=dict(size=14, color="black") # Customize font size and color
+            )]
+        )
+        return fig1
 
     st.write("Data is organized into 55 **Community Statistical Areas (CSA)**, which are clusters of neighborhoods in Baltimore organized around Census tract boundaries.")
     st.write("Calls are coded as **Non-Emergency (1)**, **Low (2)**, **Medium (3)**, **High (4)**, or **Emergency (5)**. The average priority score is calculated by dividing the sum of call priorities by the total number of calls in each CSA.")
 
     #fig1.update_geos(fitbounds="locations", visible=False)
+    fig1 = create_plot_1()
     st.plotly_chart(fig1)
 
 
