@@ -23,7 +23,7 @@ def intro():
     url = "https://bmore-open-data-baltimore.hub.arcgis.com/datasets/911-calls-for-service-2024-1/explore"
     st.write("This app provides a descriptive analysis of 911 calls in Baltimore, Maryland, and predicts the priority of calls based on various features inlcuding date, time, and neighborhood.")
     st.write("The data used in this app is sourced from [Open Baltimore API 2024 911 Calls for Service](%s)" % url)
-    st.write("The call records contain 1.6 million call records and information about each call including date, time, neighborhood, priority, and description of emergency.")
+    st.write("The call records contain 1.6 million call records and information about each call including date, time, neighborhood, priority, and description of emergency. The goal of this project is understand where and when 911 calls are being made and where and when high priority calls are being made so that that the appropriate emergency response teams can be prepared to respond to calls.")
     st.write("Use the sidebar to navigate between the Descriptive Analysis and Prediction pages.")
     st.write("**Contents**")
     st.write("1. Descriptive Analysis")
@@ -170,7 +170,39 @@ def page_1():
     st.write(
         "Over 2/3 of calls are classified as Non-Emergency calls, examples of which include noise complaints or business checks (when businesses call to request that police come to patrol the area due to security concerns or loitering). In fact, 529,826 of all calls (almost 1/3) in 2024 were business checks.")
 
-    st.write("Only 412 calls were classified as Emergency calls.")
+    st.write("Only 412 calls were classified as Emergency calls, locations of which are shown below, however there were several emergency calls with missing location data.") 
+
+    calls_emergency = calls[calls['priority'] == 'Emergency']
+
+    # group by community statistical area and count the number of calls
+    calls_emergency_grouped = calls_emergency.groupby('Community_Statistical_Areas').size().reset_index(name='frequency')
+
+    # merge calls_agg with csa_data
+    csa_data_em = csa_data.merge(calls_emergency_grouped, left_on='CSA2010', right_on='Community_Statistical_Areas', how='left')
+
+    # plot frequency of emergency calls by community statistical area
+    fig4 = px.choropleth_map(
+        csa_data_em,
+        geojson=csa_data_em.geometry,
+        locations=csa_data_em.index,
+        color='frequency',
+        color_continuous_scale='OrRd',
+        map_style="carto-positron",
+        zoom=9.8,
+        center={"lat": 39.2905, "lon": -76.6104},
+        opacity=0.5,
+        labels={"CSA2010": 'CSA', 'frequency': '# Annual Emergency Calls'},
+        hover_name="CSA2010",  # Main label for hover
+        hover_data={
+            "frequency": True
+        },
+    ).update_traces(hovertemplate=None)  # Disable default hover template
+    fig4.update_layout(
+        title = "Emergency Calls by Community Statistical Area",
+        title_x = 0.2,
+    )
+
+    st.plotly_chart(fig4)
 
 def page_2():
     st.title("Prediction")
