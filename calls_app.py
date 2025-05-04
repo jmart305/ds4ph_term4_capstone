@@ -168,7 +168,7 @@ def page_1():
     st.plotly_chart(fig3)
 
     st.write(
-        "Over 2/3 of calls are classified as Non-Emergency calls, examples of which include noise complaints or business checks (when businesses call to request that police come to patrol the area due to security concerns or loitering). In fact, 529,826 of all calls (almost 1/3) in 2024 were business checks.")
+        "Over 2/3 of calls are classified as Non-Emergency calls, examples of which include noise complaints or business checks (when businesses call to request that police come to patrol the area due to security concerns or loitering). In fact, 529,826 (almost 1/3) of all calls in 2024 were business checks.")
 
     st.write("Only 412 calls were classified as Emergency calls, locations of which are shown below, however there were several emergency calls with missing location data.") 
 
@@ -203,6 +203,39 @@ def page_1():
     )
 
     st.plotly_chart(fig4)
+
+    # extract month from date
+    calls['month'] = pd.to_datetime(calls['callDateTime']).dt.month
+    # group by month and count the number of calls
+    calls_monthly = calls.groupby('month').size().reset_index(name='frequency')
+    # create line chart of calls by month
+    fig5 = px.line(
+        calls_monthly,
+        x="month",  # Replace with the column representing the month
+        y="frequency",  # Replace with the column representing the frequency of calls
+        title="911 Calls by Month",
+        labels={"month": "Month", "frequency": "Frequency of Calls"}
+    )
+
+    # Show the plot
+    st.plotly_chart(fig5)
+
+    # extract time from date
+    calls['time'] = pd.to_datetime(calls['callDateTime']).dt.hour
+    # group by time and count the number of calls
+    calls_hourly = calls.groupby('time').size().reset_index(name='frequency')
+    # create line chart of calls by hour
+    fig6 = px.line(
+        calls_hourly,
+        x="time",  # Replace with the column representing the hour
+        y="frequency",  # Replace with the column representing the frequency of calls
+        title="911 Calls by Hour",
+        labels={"time": "Time (24 hour clock)", "frequency": "Frequency of Calls"}
+    )
+    # Show the plot
+    st.plotly_chart(fig6)
+
+    st.write("The graphs displaying temporal trends in 911 calls show that October had by far the most calls of any month in 2024, and there is an influx of calls in the late morning and evening hours.")
 
 def page_2():
     st.title("Prediction")
