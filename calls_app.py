@@ -147,6 +147,30 @@ def page_1():
     )
 
     st.plotly_chart(fig2)
+    # group data by priority and count the number of calls
+    calls_grouped = calls.groupby('priority').size().reset_index(name='frequency')
+
+    # create horizontal stacked bar chart in plotly of priority frequency
+    fig3 = px.bar(
+        calls_grouped,
+        x="frequency",  # Replace with the column representing the frequency of calls
+        y="priority",   # Replace with the column representing priority levels
+        color="priority",  # Color by priority levels
+        orientation="h",  # Horizontal bar chart
+        title="Priority Frequency",
+        labels={"frequency": "Frequency of Calls", "priority": "Priority Level"}
+    )
+
+    fig3.update_traces(
+        textposition="outside"  # Position text labels outside the bars
+    )
+    # Show the plot
+    st.plotly_chart(fig3)
+
+    st.write(
+        "Over 2/3 of calls are classified as Non-Emergency calls, examples of which include noise complaints or business checks (when businesses call to request that police come to patrol the area due to security concerns or loitering). In fact, 529,826 of all calls (almost 1/3) in 2024 were business checks.")
+
+    st.write("Only 412 calls were classified as Emergency calls.")
 
 def page_2():
     st.title("Prediction")
