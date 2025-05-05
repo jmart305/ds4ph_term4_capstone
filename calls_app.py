@@ -150,6 +150,8 @@ def page_1():
     # group data by priority and count the number of calls
     calls_grouped = calls.groupby('priority').size().reset_index(name='frequency')
 
+    priority_order = ["Emergency", "High", "Medium", "Low", "Non-Emergency"]
+
     # create horizontal stacked bar chart in plotly of priority frequency
     fig3 = px.bar(
         calls_grouped,
@@ -158,7 +160,8 @@ def page_1():
         color="priority",  # Color by priority levels
         orientation="h",  # Horizontal bar chart
         title="Priority Frequency",
-        labels={"frequency": "Frequency of Calls", "priority": "Priority Level"}
+        labels={"frequency": "Frequency of Calls", "priority": "Priority Level"},
+        category_orders={"priority": priority_order}  # Specify the order of priority levels
     )
 
     fig3.update_traces(
