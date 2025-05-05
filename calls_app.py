@@ -223,6 +223,27 @@ def page_1():
     # Show the plot
     st.plotly_chart(fig5)
 
+    # aggregate calls by month and sum of priority code and total number of calls
+    calls_agg2 = calls.groupby('month').agg(
+    total_calls=('priority_code', 'count'),
+    total_priority=('priority_code', 'sum')
+    ).reset_index()
+    calls_agg2.head()
+
+    calls_agg2['priority_score'] = calls_agg['total_priority'] / calls_agg['total_calls']
+    calls_agg2.head()
+
+    # create line chart of calls by month
+    fig7 = px.line(
+        calls_agg2,
+        x="month",  # Replace with the column representing the month
+        y="priority_score",  # Replace with the column representing the frequency of calls
+        title="Priority of 911 Calls by Month",
+        labels={"month": "Month", "priority_score": "Average Priority"}
+    )
+    # Show the plot
+    st.plotly_chart(fig7)
+
     # extract time from date
     calls['time'] = pd.to_datetime(calls['callDateTime']).dt.hour
     # group by time and count the number of calls
@@ -238,7 +259,30 @@ def page_1():
     # Show the plot
     st.plotly_chart(fig6)
 
+    # aggregate calls by month and sum of priority code and total number of calls
+    calls_agg3 = calls.groupby('time').agg(
+        total_calls=('priority_code', 'count'),
+        total_priority=('priority_code', 'sum')
+    ).reset_index()
+    calls_agg3.head()
+
+    calls_agg3['priority_score'] = calls_agg['total_priority'] / calls_agg['total_calls']
+    calls_agg3.head()
+
+    # create line chart of calls by month
+    fig8 = px.line(
+        calls_agg3,
+        x="time",  # Replace with the column representing the month
+        y="priority_score",  # Replace with the column representing the frequency of calls
+        title="Priority of 911 Calls by Hour",
+        labels={"time": "Time (24 hour clock)", "priority_score": "Average Priority"}
+    )
+    # Show the plot
+    st.plotly_chart(fig8)
+
     st.write("The graphs displaying temporal trends in 911 calls show that October had by far the most calls of any month in 2024, and there is an influx of calls in the late morning and evening hours.")
+
+    st.write("May had the highest priority calls, however there are no major priority trends month to month. Late afternoon shows the highest priority calls.")
 
 def page_2():
     st.title("Prediction")
