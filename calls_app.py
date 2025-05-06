@@ -15,6 +15,7 @@ from sklearn.preprocessing import OneHotEncoder
 from sklearn.preprocessing import StandardScaler
 import pickle
 from model_def import EnhancedPredictor
+from model_def import BinaryPredictor
 
 # Define pages
 def intro():
@@ -285,8 +286,8 @@ def page_1():
     st.write("May had the highest priority calls, however there are no major priority trends month to month. Late afternoon shows the highest priority calls.")
 
 def page_2():
-    st.title("Prediction")
-    st.write("Please input Community Area, Date, and Time to get a predicted priority call level.")
+    st.title("Call Priority Level Prediction")
+    st.write("Please input Neighborhood, Call Description, Date, Time, and Day of the Week to get a predicted priority call level.")
 
     # Read in Model and Preprocessors
     with open('priority_model.pkl', 'rb') as f:
@@ -296,19 +297,16 @@ def page_2():
         preprocessors = pickle.load(f)
     scaler = preprocessors['scaler']           # StandardScaler/MinMaxScaler
     le_priority = preprocessors['le_priority'] # LabelEncoder for priority
-    le_csa = preprocessors['le_csa']
     le_neighborhood = preprocessors['le_neighborhood']
     le_description = preprocessors['le_description']
 
     # Read in Data
-    csa = pd.read_csv("csa.csv")
     neighborhood = pd.read_csv("neighborhood.csv")
     description = pd.read_csv("description.csv")
 
     # Get Inputs
-    community_area = st.selectbox("Select Community Statistical Area", options=csa, index = 0)
     neighborhood_val = st.selectbox("Select Neighborhood", options=neighborhood, index = 0)
-    descrip_val = st.selectbox("Select Description", options=description, index = 0)
+    descrip_val = st.selectbox("Select Call Description", options=description, index = 0)
     date = st.date_input("Select Date", value=pd.to_datetime("2024-01-01"))
     time = st.time_input("Select Time", value=pd.to_datetime("12:00").time())
     days_of_week = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
@@ -317,7 +315,6 @@ def page_2():
     le_dayOTW = LabelEncoder()
     le_dayOTW.classes_ = np.array(days_of_week)
     day_of_week = le_dayOTW.transform([day_of_week])
-    community_area = le_csa.transform([[community_area]])
     neighborhood_val = le_neighborhood.transform([[neighborhood_val]])
     descrip_val = le_description.transform([[descrip_val]])
 
@@ -343,13 +340,83 @@ def page_2():
     preds = le_priority.inverse_transform(preds.numpy())
     st.write("Predicted Priority Level: ", preds.item())
 
+def page_3():
+    st.title("Non-Emergency Call Prediction")
+    st.write("Please input Neighborhood, Date, Time, and Day of the Week to get a predicted priority call level of either non-emergency or urgent.")
+
+    # Import Model and Preprocessors
+    with open('binary_model.pkl', 'rb') as f:
+        model = pickle.load(f)
+
+    with open('preprocessors.pkl', 'rb') as f:
+        preprocessors = pickle.load(f)
+    scaler = preprocessors['scaler']           # StandardScaler/MinMaxScaler
+    le_neighborhood = preprocessors['le_neighborhood']
+
+    with open('binary_preprocessors.pkl', 'rb') as f:
+        binary_preprocessors = pickle.load(f)
+    le_priority_binary = binary_preprocessors['le_priority_binary'] # LabelEncoder for priority
+
+    # Read in Data
+    neighborhood = pd.read_csv("neighborhood.csv")
+
+    # Get Inputs
+    neighborhood_val = st.selectbox("Select Neighborhood", options=neighborhood, index = 0)
+    date = st.date_input("Select Date", value=pd.to_datetime("2024-01-01"))
+    time = st.time_input("Select Time", value=pd.to_datetime("12:00").time())
+    days_of_week = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+    day_of_week = st.selectbox("Select Day of Week", options=days_of_week, index = 0)
+
+    le_dayOTW = LabelEncoder()
+    le_dayOTW.classes_ = np.array(days_of_week)
+    day_of_week = le_dayOTW.transform([day_of_week])
+    neighborhood_val = le_neighborhood.transform([[neighborhood_val]])
+
+    x_input = pd.DataFrame({
+        'month': pd.to_datetime(date).month,
+        'day': pd.to_datetime(date).day,
+        'time': int(time.strftime("%H%M%S")),
+        'day_of_week': day_of_week
+    })
+
+    features = ['month', 'day', 'time']
+    x_input[features] = scaler.transform(x_input[features])
+    x_input = x_input.join(pd.DataFrame(neighborhood_val, columns = le_neighborhood.categories_))
+    x_input_torch = torch.from_numpy(x_input.values.astype(np.float32))
+
+    model.eval()
+    with torch.no_grad():
+        logits = model(x_input_torch)
+        probs = torch.softmax(logits, dim = 1)
+        preds = torch.argmax(probs, dim = 1)
+
+    preds = le_priority_binary.inverse_transform(preds.numpy())
+    st.write("Predicted Priority Level (Non-Emergency or Urgent): ", preds.item())
+
+
+def page_4():
+    st.title("Model Limitations")
+    st.write("This section describes the model limitations for predicting call priority levels. The goal of this analysis was to understand if predicting call priority level (binary or non-binary) from limited information was possible. If so, this would help 911 call operators prioritize calls and be more efficient.")
+    st.write("We fit two neural network models to predict call priority level (model 1) and a binary predictor of whether a call was emergency or non-emergency (model 2). Both models were two layer neural networks (256 and 128 nodes for model 1, 128 and 64 nodes for model 2). Both models weighted the calls by priority level such that less frequent call priority levels were upweighted in the training of our models.")
+    st.write("Our analysis revealed that our model has several limitations. The model that predicts call priority level from description, neighborhood, and time variables was fairly accurate (~93 percent accurate), but overpredicts emergencies and out of service. It is also fairly inaccurate when the description is 'other'; the accuracy in this group is roughly 15.5 percent. The confusion matrix shows some limitations in our model.")
+    st.image("confusion_matrix.png", caption="Confusion Matrix for Call Priority Level Prediction", use_container_width=True)
+    
+    st.write("As often it takes a moment to get a description of the call, we also tried to predict whether a call was urgent or a non-emergency from just location and time information. This model was also very limited; it had about a 67 percent accuracy and the confusion matrix is shown below.")
+    st.image("confusion_matrix_binary.png", caption="Confusion Matrix for Non-Emergency Call Prediction", use_container_width=True)
+    st.subheader("Conclusions and Future Directions")
+    st.write("Our model was able to predict call priority level with a fair amount of accuracy if the description is known; however, if the description is not known, our model is not very accurate. Future directions could explore using other types of models (random forest, logistic regression, etc.) to assess the feasibility of predicting binary call priority from these predictors not including description, but we do not believe neural networks will be effective for this task.")
+
 # Sidebar navigation
-page = st.sidebar.radio("Select a Page", ["Welcome", "Descriptive Analysis", "Prediction"])
+page = st.sidebar.radio("Select a Page", ["Welcome", "Descriptive Analysis", "Call Priority Level Prediction", "Non-Emergency Call Prediction", "Model Limitations"])
 
 # Render the selected page
 if page == "Welcome":
     intro()
 if page == "Descriptive Analysis":
     page_1()
-elif page == "Prediction":
+elif page == "Call Priority Level Prediction":
     page_2()
+elif page == "Non-Emergency Call Prediction":
+    page_3()
+elif page == "Model Limitations":
+    page_4()
