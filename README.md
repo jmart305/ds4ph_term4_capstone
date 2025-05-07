@@ -19,10 +19,4 @@ For our last model, we decided to make the outcome a binary variable, either non
 
 After fitting these models, we learned that, as expected, call description is a powerful predictor, but a model with call description as a predictor is no more useful than a human matching call description to a priority level. Without the description, predicting both a specific priority level or a binary outcome is difficult for a neural network, and this task is specifically difficult due to the extremely large non-emergent call volume for issues like noise complaints or requests to patrol an area. In the future, we could try different models such as logistic regression or random forest, or use other variables in the dataset as precitors such as police precinct and address of the call. To conclude, no model will be perfect and the inherently unpredictable nature of emergengies makes it difficult for models to forecast. 
 
-See our streamlit app which includes a prediction tool!
-
-
-
-
-
-Limitations: overfit to 2024 regarding month variable
+See our streamlit app which includes a prediction tool! 
