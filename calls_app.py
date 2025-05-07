@@ -25,12 +25,16 @@ def intro():
     st.write("This app provides a descriptive analysis of 911 calls in Baltimore, Maryland, and predicts the priority of calls based on various features inlcuding date, time, and neighborhood.")
     st.write("The data used in this app is sourced from [Open Baltimore API 2024 911 Calls for Service](%s)" % url)
     st.write("The call records contain 1.6 million call records and information about each call including date, time, neighborhood, priority, and description of emergency. The goal of this project is to understand where and when 911 calls are being made and where and when high priority calls are being made so that that the appropriate emergency response teams can be prepared to respond to calls.")
-    st.write("Use the sidebar to navigate between the Descriptive Analysis and Prediction pages.")
+    st.write("Use the sidebar to navigate between pages.")
     st.write("**Contents**")
-    st.write("1. Descriptive Analysis")
+    st.write("**Descriptive Analysis**")
     st.write("  - Spatial and temporal trends in 911 calls and priority level")
-    st.write("2. Prediction Page 1")
-
+    st.write("**Call Priority Level Prediction**")
+    st.write("  - Predict call priority level from description, neighborhood, and time")
+    st.write("**Non-Emergency Call Prediction**")
+    st.write("  - Predict whether a call is an emergency or non-emergency from neighborhood and time")
+    st.write("**Model Limitations**")
+    st.write("  - Discuss model limitations and future directions")
 
 def page_1():
     st.title("Descriptive Analysis")
